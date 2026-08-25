@@ -1,0 +1,53 @@
+# Tata Nexon EV Long Range — vehicle-dynamics parameters.
+# Every value is classified per audit/vehicle_integration_plan.md's sourcing
+# rule: [datasheet] / [literature] / [derived] / [assumption]. Nothing here
+# is presented as manufacturer data unless it was actually found published.
+# Sources checked: tata.ev official spec page, 91wheels, autocarindia,
+# cardekho, Wikipedia "Tata Nexon" (Aug 2026 web search).
+
+mass_kg: 1400.0
+# [datasheet] Kerb weight, Tata Nexon EV / Nexon EV Max, consistently listed
+# as 1400 kg across multiple retailer spec pages (91wheels: Nexon EV and
+# Nexon EV Max both list "1400 kg Kerb Weight"). NOTE: Wikipedia's
+# infobox lists a wider "1,437-1,531 kg" range for "Nexon.EV" without
+# specifying which trim/variant that range covers -- flagged as a minor
+# source discrepancy, not resolved here. 1400 kg used as the more
+# specific, repeated, retailer-sourced figure.
+
+frontal_area_m2: 2.46
+# [derived] width_m (1.802, [datasheet] tata.ev official spec page) x
+# height_m (1.625, [datasheet] tata.ev official spec page) x 0.84
+# (shape factor for estimating frontal area from overall width x height,
+# [literature] -- standard automotive-engineering approximation; actual
+# frontal area is smaller than the width x height rectangle due to
+# rounded body shape). No official frontal-area figure was found published
+# for this vehicle.
+
+drag_coefficient: 0.35
+# [assumption] Tata does not publish an official Cd for the Nexon/Nexon EV
+# in any source checked. 0.35 is a mid-range value for the compact-SUV
+# class generally (typical production SUV Cd range ~0.30-0.40 per
+# automotive aerodynamics literature, e.g. Wikipedia "List of automobile
+# drag coefficients"). This is a genuine assumption, not a Nexon-specific
+# measurement -- treat any result sensitive to this value with that in mind.
+
+rolling_resistance_coefficient: 0.010
+# [literature] Typical Crr for passenger-car radial tires on asphalt is
+# commonly cited in the 0.008-0.015 range in automotive engineering
+# references; 0.010 is a standard mid-range value. Not Nexon-specific --
+# no published tire-specific Crr was found for this vehicle's stock tires.
+
+wheel_radius_m: 0.325
+# [assumption] Nexon EV is specified with R16 wheels (confirmed
+# [datasheet], multiple spec pages), but exact tire sidewall/rolling
+# radius was not found published. 0.325 m is a typical rolling radius for
+# an R16 passenger/SUV tire (~205/60R16 or similar common fitment) --
+# an engineering estimate, not a verified figure.
+
+air_density_kg_m3: 1.225
+# [literature] Standard ISA sea-level air density at 15°C. Not
+# location/climate-specific; a driving-EMS evaluation across different
+# ambient conditions would need to vary this, not done in this phase.
+
+gravity_m_s2: 9.81
+# [literature] Standard gravitational acceleration.

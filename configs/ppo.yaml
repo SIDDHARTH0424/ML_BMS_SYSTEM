@@ -1,0 +1,58 @@
+# PPO Hyperparameter Configuration (Stable-Baselines3)
+
+policy: "MlpPolicy"
+policy_kwargs:
+  net_arch: [64, 64]     # Two hidden layers, 64 neurons each
+
+learning_rate: 0.0003
+n_steps: 8192
+# run_010 note: increased from 2048 -- run_009's actual TensorBoard curve
+# (not just checkpoint end-states) showed explained_variance repeatedly
+# breaking down (including going negative, e.g. -20.5 at step 274k, -2.5 at
+# step 525k) alongside a sustained ep_rew_mean decline and steadily rising
+# policy std (0.83 -> 1.48) through the back half of training -- consistent
+# with the value function failing to bootstrap correctly when a 2048-step
+# rollout captures only a fraction of episodes that run up to 7200 steps.
+# approx_kl stayed low throughout (target_kl wasn't the bottleneck), ruling
+# out "individual updates too large" as the mechanism. This is the single
+# variable changed for run_010; seed, target_kl, reward, and safety layer
+# are all unchanged from run_009.
+batch_size: 64
+n_epochs: 10
+gamma: 0.99
+gae_lambda: 0.95
+clip_range: 0.2
+ent_coef: 0.01
+# target_kl: caps how far a single PPO update can shift the policy — if the
+# approx_kl for an epoch exceeds this, remaining epochs on that batch are
+# skipped. Added after observing a mid-training collapse (checkpoint sweep
+# on run_003 showed mean_final_soc dropping from ~0.95 at 100k-150k steps to
+# ~0.175 at 225k-375k steps, before partially recovering by 1M) — a likely
+# sign of one or more destabilizing large updates. 0.03 is a commonly used
+# conservative value; None (SB3 default) applies no cap.
+target_kl: 0.01
+# run_005 note: tightened from 0.03 — run_003 and run_004 (target_kl=0.03)
+# produced IDENTICAL checkpoint-by-checkpoint results under seed=42,
+# indicating 0.03 never actually engaged (approx_kl never exceeded it).
+# 0.01 is deliberately tight enough to bite on ordinary updates.
+# NOTE: was 0.0 in earlier versions — that let the action std collapse
+# (0.96 -> 0.05 over a 1M-step run) before the policy found real charging
+# behavior, locking in a "do nothing" local optimum with no exploration left
+# to escape it. 0.01 keeps some exploration pressure through training.
+vf_coef: 0.5
+max_grad_norm: 0.5
+
+# --- Training stage control ---
+stage1_sanity_timesteps: 5000
+stage2_reward_verification_timesteps: 20000
+stage3_hpo_timesteps: 50000
+stage4_full_training_timesteps: 1000000
+
+seed: 7
+# run_006 note: changed from 123 — third seed in the seed-sensitivity
+# comparison (42 -> severe collapse ~175k, 123 -> moderate decline ~475k).
+# target_kl stays at 0.01 (unchanged from run_005) to isolate seed as the
+# only variable. n_steps/lr/batch_size/gamma/gae_lambda/reward/battery model
+# all deliberately untouched per the three-seed experiment design.
+tensorboard_log: "runs/tensorboard"
+checkpoint_freq: 25000

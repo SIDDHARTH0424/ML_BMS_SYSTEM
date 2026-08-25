@@ -1,0 +1,13 @@
+cycle_id: epa_hwfet
+name: EPA HWFET (Highway Fuel Economy Test)
+category: Highway
+publisher: United States Environmental Protection Agency (EPA)
+standard_reference: EPA Highway Test Schedule
+license: "Public Domain (US Government Work, 17 U.S.C. \xA7 105)"
+duration_seconds: 765
+sample_rate_hz: 1.0
+speed_units: m/s
+time_units: s
+verified: true
+redistribution_permitted: true
+resampling_applied: None (exact 1-Hz integer grid)

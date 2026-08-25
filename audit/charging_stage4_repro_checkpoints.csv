@@ -1,0 +1,3 @@
+mean_charging_time_s,reached_fraction,max_peak_temp_c,mean_applied_current_a,target_timesteps,actual_num_timesteps,effective_lr_at_checkpoint
+2094.8,1.0,43.066531594388,155.94713494531422,100000,100000,0.00027
+7200.0,0.0,43.02150516889433,44.56027311276334,200000,200000,0.00023999999999999998

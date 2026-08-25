@@ -1,0 +1,54 @@
+# Driving-EMS episode and reward configuration.
+#
+# IMPORTANT (per master task §19): reward weights below are a FIRST PASS
+# for logging/scale-measurement, not a validated final reward. Following
+# the same discipline used for the charging Stable V3 thermal reward
+# (see audit/thermal_weight_040_045_report.md and
+# audit/stable_v3_report.md): do not trust these weights until each
+# component's actual magnitude has been logged and compared. No PPO
+# training should be run against these weights as "final" without that
+# diagnostic pass first.
+
+dt_seconds: 1.0                      # matches configs/battery.yaml -- see audit/vehicle_integration_plan.md §8
+
+initial_soc_range: [0.30, 0.70]      # [assumption] mid-range starting SoC for driving episodes;
+                                      #   not sourced from anywhere, a reasonable placeholder for Phase 6
+ambient_temp_range_c: [15.0, 35.0]   # [assumption] matches the charging env's own train range (simulation.yaml)
+
+# Action -> desired battery power mapping (task §18). Convention VERIFIED
+# against audit/vehicle_integration_plan.md rather than copying the
+# master task's illustrative example, which used the opposite sign:
+#   action > 0  -> desired CHARGE power (into battery), consistent with
+#                  this project's existing "positive current = charging"
+#                  convention (ecm_model.py docstring)
+#   action < 0  -> desired DISCHARGE power (out of battery, propulsion)
+# This differs from the master task prompt's example on purpose -- the
+# prompt explicitly said "verify the project sign convention first,
+# do not guess", and the existing convention is charging-positive.
+max_desired_charge_power_w: 25000.0   # = drivetrain.yaml max_regen_power_w (only realistic source of
+                                       #   "charging" power while driving is regen)
+max_desired_discharge_power_w: 106400.0  # = drivetrain.yaml motor_max_power_w (ceiling for propulsion draw)
+
+episode_max_steps: 3600               # Allow full standard cycles (WLTP 1800s, UDDS 1372s) to run to completion
+
+# --- Reward weights: Stage Q Empirically Derived Values ---
+# Empirical derivation based on 4,529 step records across 4 standard regulatory cycles
+# (see audit/driving_reward_distribution.csv and audit/driving_action_authority.md):
+#   - At nominal cruising/acceleration, energy_cost provides ~82.5% of absolute signal.
+#     Increasing w_energy_cost from 0.1 -> 0.3 strengthens the policy gradient for energy efficiency.
+#   - At braking events (21% of steps), capturing available regen provides up to +0.50 reward/step.
+#     w_regen_recovery is maintained at 0.5 to keep strong incentive for 100% recovery.
+#   - w_tracking_error is increased from 1.0 -> 1.5 (+50%) to ensure power shortfall penalties
+#     strictly dominate energy cost, preventing the agent from under-delivering propulsion power.
+w_tracking_error: 1.5
+w_energy_cost: 0.3
+w_regen_recovery: 0.5
+w_thermal_stress: 0.5
+w_safety_penalty: 1.0
+
+# Thermal-stress term reuses the exact same state-aware form validated in
+# Stage F -- same reference derivation, reused rather than reinvented.
+thermal_reference_temp_c: 33.0
+thermal_scale_c: 22.0
+thermal_q_reference_w: 1190.4         # = i_max_a^2 * (r0_ohm + r1_ohm), battery.yaml (charging env's own reference)
+

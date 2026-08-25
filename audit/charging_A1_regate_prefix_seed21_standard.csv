@@ -1,0 +1,2 @@
+candidate,seed,reached_target_all,reached_fraction,mean_charging_time_s,max_temperature_max_c,mean_requested_current_a,mean_applied_current_a,cumulative_q_gen_j
+A1_via_build_agent,21,True,1.0,2671.0,40.76352531667449,122.3555178022772,122.29221892277205,1863156.4382674487

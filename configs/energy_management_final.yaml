@@ -1,0 +1,40 @@
+# FROZEN Driving-EMS reward configuration -- Track B, Candidate B3.
+# Passed the Track B strict short-training gate (2/3 seeds, all 8
+# conditions) at 100,000 timesteps/seed on 2026-08-16.
+# See audit/driving_power_deficit_and_full_gate.md and
+# audit/driving_B3_checkpoint_quality_diagnostic_report.md for full evidence.
+#
+# Derived from configs/energy_management.yaml (dev config, unchanged)
+# via a two-step controlled search:
+#   1. Candidate B2 (w_regen_recovery=1.2) at 50k steps: cross-seed mean
+#      129.78 Wh/km, regen 90.1% -- did not clear gate.
+#   2. Candidate B2 at 100k steps (budget-only change): 129.24 Wh/km,
+#      regen 97.2% -- still did not clear gate (1/3 seeds).
+#   3. Candidate B3 (this file): w_regen_recovery 1.2 -> 1.4 (single
+#      variable change from step 2), 100k steps: 128.93 Wh/km mean,
+#      regen 98.5%, 2/3 seeds (7, 42) pass every gate condition.
+#
+# Only w_regen_recovery differs from configs/energy_management.yaml's
+# dev defaults (0.5). w_tracking_error, w_energy_cost, thermal params,
+# and all non-reward fields are unchanged and copied through unmodified.
+
+dt_seconds: 1.0
+
+initial_soc_range: [0.30, 0.70]
+ambient_temp_range_c: [15.0, 35.0]
+
+max_desired_charge_power_w: 25000.0
+max_desired_discharge_power_w: 106400.0
+
+episode_max_steps: 3600
+
+# --- Reward weights: FROZEN, Candidate B3 ---
+w_tracking_error: 1.5
+w_energy_cost: 0.2
+w_regen_recovery: 1.4
+w_thermal_stress: 0.5
+w_safety_penalty: 1.0
+
+thermal_reference_temp_c: 33.0
+thermal_scale_c: 22.0
+thermal_q_reference_w: 1190.4

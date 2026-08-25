@@ -1,0 +1,37 @@
+# Drivetrain / motor parameters for the driving-EMS extension.
+# Sourced and classified per audit/vehicle_integration_plan.md's rule.
+# Checked: tata.ev, autocarindia, team-bhp, ackodrive, timesdrive (Aug 2026).
+
+motor_max_power_w: 106400.0
+# [datasheet] "106.4 kW (143 BHP)" Gen-2 motor, Tata Nexon.EV 45 kWh
+# variant (Team-BHP, autocarindia both confirm ~106 kW for the 45 kWh
+# pack; 95 kW figure applies to the smaller 30 kWh variant, not used here
+# since configs/battery.yaml's pack is the 45 kWh/121 Ah variant).
+
+propulsion_efficiency: 0.90
+# [literature] Combined motor + inverter + single-speed-gearbox efficiency
+# for a modern automotive PMSM drivetrain is commonly cited in the
+# 0.88-0.95 range in general EV powertrain engineering literature. No
+# Tata-published combined-efficiency figure was found. 0.90 is a
+# representative mid-range literature value, NOT a Nexon-specific
+# datasheet number -- flagged as an assumption in spirit even though the
+# range itself is literature-grounded.
+
+regen_efficiency: 0.80
+# [literature] Regenerative braking has additional conversion losses
+# relative to propulsion (motor acting as generator + inverter rectification
+# + battery charge-acceptance losses); commonly cited combined regen
+# efficiency in EV/HEV energy-management literature is lower than
+# propulsion efficiency, often in the 0.70-0.85 range. 0.80 is a
+# representative mid-range value. Not Nexon-specific -- Tata confirms the
+# Nexon EV HAS 4-level selectable regenerative braking (confirmed
+# [datasheet], multiple sources) but publishes no efficiency or power
+# figure for it.
+
+max_regen_power_w: 25000.0
+# [assumption] Tata does not publish a regen power figure for the Nexon
+# EV (only the qualitative "4 levels" feature). 25 kW is an engineering
+# assumption -- a fraction of motor_max_power_w broadly consistent with
+# typical compact-EV regen power figures reported in general automotive
+# press for similar-class vehicles, NOT a verified Nexon-specific number.
+# Treat any result sensitive to this value accordingly.

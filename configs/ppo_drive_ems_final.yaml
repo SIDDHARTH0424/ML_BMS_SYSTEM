@@ -1,0 +1,39 @@
+# FROZEN Driving-EMS PPO configuration -- Track B, Candidate B3.
+# Passed the Track B strict short-training gate (2/3 seeds, all 8
+# conditions) at 100,000 timesteps/seed on 2026-08-16.
+# See audit/driving_power_deficit_and_full_gate.md and
+# audit/driving_B3_checkpoint_quality_diagnostic_report.md for full evidence.
+#
+# Identical to configs/ppo_drive_ems.yaml (dev config, unchanged) except
+# ent_coef: 0.0 -> 0.010, validated via the entropy-only isolation
+# experiment (audit/driving_entropy_isolation.md) and carried through
+# candidates B1/B2/B3 unchanged (never re-tuned after isolation --
+# Absolute Rule 8: one mechanism at a time). use_sde and squash_output
+# remain false, matching the charging-PPO Stable V3 finding.
+
+policy: "MlpPolicy"
+learning_rate: 0.0003
+n_steps: 2048
+batch_size: 64
+n_epochs: 10
+gamma: 0.99
+gae_lambda: 0.95
+clip_range: 0.2
+ent_coef: 0.010
+vf_coef: 0.5
+max_grad_norm: 0.5
+target_kl: 0.01
+seed: 7
+
+policy_kwargs:
+  net_arch: [64, 64]
+
+use_sde: false
+squash_output: false
+
+# Short-gate validated budget: 100,000 timesteps/seed (top of the
+# 50k-100k range authorized in the master plan's Track B Step 7).
+# Long-training budget below is NOT itself validated by the short
+# gate -- extending duration further is a separate decision requiring
+# its own checkpoint evaluation per Part 9.
+short_gate_validated_timesteps: 100000

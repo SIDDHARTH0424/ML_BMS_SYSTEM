@@ -1,0 +1,11 @@
+condition,temperature_c,current_a,q_gen_w,thermal_excess_c,thermal_penalty
+"T well below ref (25C), full current 160A",25.0,160.0,950.4,0.0,0.0
+"T below ref (30C), full current 160A",30.0,160.0,950.4,0.0,0.0
+"T at ref (33C), full current 160A",33.0,160.0,950.4,0.0,0.0
+"T mod above ref (38C), half current 80A",38.0,80.0,297.6,5.0,0.006457
+"T mod above ref (38C), full current 160A",38.0,160.0,950.4,5.0,0.02062
+"T subst above ref (45C), half current 80A",45.0,80.0,297.6,12.0,0.03719
+"T subst above ref (45C), full current 160A",45.0,160.0,950.4,12.0,0.118768
+"T near cutoff (50C), zero current 0A",50.0,0.0,80.0,17.0,0.020064
+"T near cutoff (50C), half current 80A",50.0,80.0,297.6,17.0,0.074638
+"T near cutoff (50C), full current 160A",50.0,160.0,950.4,17.0,0.238361

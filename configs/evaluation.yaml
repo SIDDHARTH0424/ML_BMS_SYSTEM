@@ -1,0 +1,51 @@
+# Evaluation Framework Configuration
+
+controllers: ["ppo", "ppo_no_safety", "cc", "cccv", "adaptive", "max_current"]
+# ppo_no_safety: ablation — same trained policy, safety layer left in
+# monitoring-only mode (interventions logged but not enforced; episode still
+# hard-terminates on overvoltage/overtemperature). Quantifies the safety
+# layer's contribution rather than simulating an unconstrained battery.
+# max_current: control experiment — a trivial controller that always
+# requests i_max unconditionally. Tests whether PPO's advantage over the
+# other baselines comes from anything learned, or entirely from the safety
+# layer (see docs/results_and_discussion.md Section 4 — the trained policy
+# was found to saturate to "always request max current" with zero
+# measurable state-dependence).
+
+n_runs_per_scenario: 1          # deterministic scenarios use fixed seeds; increase if adding stochastic noise later
+
+metrics:
+  - charging_time_s
+  - peak_temperature_c
+  - average_temperature_c
+  - final_soc
+  - safety_interventions
+  - current_smoothness
+  - energy_efficiency
+  - average_input_power_w
+  - energy_per_percent_soc_wh
+  - voltage_stability
+  - target_reached
+  - time_to_target_s
+  - target_shortfall
+
+report:
+  aggregate: ["mean", "std"]
+  export_formats: ["csv", "png"]
+  output_dir: "runs/{run_id}/evaluation"
+
+# Baseline controller parameters (used only during evaluation/baseline runs).
+# Scaled to the sourced 121Ah / 160A pack in battery.yaml.
+cc:
+  current_a: 121.0                # [derived] 1C for a 121Ah pack — common industry baseline C-rate
+
+cccv:
+  cc_current_a: 121.0             # 1C CC phase
+  cv_voltage_v: 400.0             # [derived] typical CV setpoint, ~20V below the 420V hard cell-voltage limit
+  cv_cutoff_current_a: 6.0        # [literature] ~C/20 cutoff, standard CCCV termination criterion
+  cv_proportional_gain: 0.1       # CV-phase taper gain (fraction of cc_current shed per volt of overshoot)
+
+adaptive:
+  # SoC-banded current table (simple rule-based adaptive charging), scaled to i_max=160A
+  soc_bands: [0.0, 0.3, 0.6, 0.8, 1.0]
+  current_a_per_band: [160.0, 130.0, 83.0, 36.0]

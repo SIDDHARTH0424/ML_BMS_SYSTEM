@@ -1,0 +1,13 @@
+cycle_id: wltp_class3b
+name: WLTP Class 3b (Worldwide Harmonized Light Vehicles Test Procedure)
+category: Mixed
+publisher: United Nations Economic Commission for Europe (UNECE)
+standard_reference: UN ECE Global Technical Regulation No. 15 (ECE/TRANS/180/Add.15)
+license: Open International Regulatory Standard
+duration_seconds: 1800
+sample_rate_hz: 1.0
+speed_units: m/s
+time_units: s
+verified: true
+redistribution_permitted: true
+resampling_applied: None (exact 1-Hz integer grid)

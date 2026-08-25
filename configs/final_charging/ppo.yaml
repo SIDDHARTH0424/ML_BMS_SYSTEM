@@ -1,0 +1,36 @@
+# Frozen Final PPO Configuration for Charging BMS (Candidate A1)
+# CORRECTED: restored `seed` (was missing -- crashes run_stage's
+# set_global_seed call) and `ent_coef` (was 0.0; the actual Candidate A1
+# diagnostic/gate runs in experiments/run_readiness_diagnostics.py loaded
+# ent_coef from the dev configs/ppo.yaml, which is 0.01 -- 0.0 here did
+# not match what was validated). stage*_timesteps/tensorboard_log/
+# checkpoint_freq restored too -- required by run_stage() for any stage,
+# and unrelated to the Track A candidate search (thermal reward params
+# only), so left at dev defaults.
+policy: "MlpPolicy"
+learning_rate: 0.0003
+n_steps: 8192
+batch_size: 64
+n_epochs: 10
+gamma: 0.99
+gae_lambda: 0.95
+clip_range: 0.2
+ent_coef: 0.01
+vf_coef: 0.5
+max_grad_norm: 0.5
+target_kl: 0.01
+
+policy_kwargs:
+  net_arch: [64, 64]
+
+use_sde: false
+squash_output: false
+
+stage1_sanity_timesteps: 5000
+stage2_reward_verification_timesteps: 20000
+stage3_hpo_timesteps: 50000
+stage4_full_training_timesteps: 1000000
+
+seed: 7
+tensorboard_log: "runs/tensorboard"
+checkpoint_freq: 25000

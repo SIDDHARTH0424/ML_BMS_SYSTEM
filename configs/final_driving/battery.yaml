@@ -1,0 +1,67 @@
+# Battery Model Configuration — 1RC Thevenin Equivalent Circuit Model
+# Chemistry: NMC (Nickel Manganese Cobalt)
+#
+# Derived for a Tata Nexon EV Long Range-class pack (45 kWh usable, 121 Ah,
+# ~372 V nominal — Tata.ev spec sheet / EV Database, July 2026 search).
+# Pack topology assumed ~100s8p from public specs (100 series x ~3.7V NMC
+# cells = ~370V nominal; 8 parallel x ~15Ah cells = ~120Ah), consistent with
+# large-format NMC pouch cells (3.0-4.2V window, ~3.7V nominal — see e.g.
+# arXiv:2203.08515, a 55Ah/3.7V NMC pouch cell characterisation).
+# Every parameter below is annotated with its source: [datasheet] = read
+# directly off a public spec sheet, [derived] = computed from datasheet
+# figures + a documented pack topology assumption, [literature] = typical
+# published value for this cell/pack class, not Nexon-specific.
+
+chemistry: "NMC"
+
+# --- Capacity ---
+nominal_capacity_ah: 121.0          # [datasheet] Tata Nexon EV LR: "45 kWh (121 Ah)" usable capacity
+
+# --- Electrical (1RC ECM) parameters, pack-level ---
+# R0 [derived]: per-cell DCIR ~1.5 mOhm (literature, large-format NMC pouch
+#   cells, e.g. 20-55Ah class) x 100 series / 8 parallel = ~18.75 mOhm,
+#   plus ~15 mOhm busbar/connector/contactor overhead (typical 10-30 mOhm
+#   range per batterydesign.net pack-resistance analysis) => ~34 mOhm.
+r0_ohm: 0.034
+# R1 [derived]: per-cell polarisation resistance ~1.0 mOhm (literature) x
+#   100/8 => ~12.5 mOhm. No pack-level overhead (polarisation is intra-cell).
+r1_ohm: 0.0125
+# C1 [literature]: chosen so tau = R1*C1 = 30s, within the 20-40s range
+#   commonly reported for 1RC polarisation dynamics of large-format NMC cells.
+c1_farad: 2400.0
+
+# --- OCV-SoC lookup table (NMC pack, 0..1 SoC -> Volts) ---
+# [derived]: typical single-cell NMC OCV-SoC curve (3.0V @ 0% -> 3.7V nominal
+# @ ~50-60% -> 4.2V @ 100%, standard NMC shape) scaled x100 for the assumed
+# 100-series pack. Smooth curve by construction -> strong PPO learning signal.
+ocv_soc_points:
+  soc:    [0.00, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 1.00]
+  ocv_v:  [300.0, 330.0, 345.0, 355.0, 360.0, 363.0, 365.0, 368.0, 372.0, 380.0, 395.0, 405.0, 420.0]
+
+# --- Thermal model (lumped capacitance) ---
+mass_kg: 300.0                      # [literature/estimated] typical reported pack mass for a 40-45kWh
+                                     #   Ziptron-class pack in EV comparison reviews; not an official Tata figure
+specific_heat_j_per_kgk: 900.0      # [literature] typical lumped effective specific heat (cells+housing+coolant)
+                                     #   used in EV battery thermal modelling papers, common range 800-1100 J/kgK
+convection_h: 25.0                  # [assumption] simplified natural-convection-equivalent proxy.
+                                     #   NOTE: the real Ziptron pack is liquid-cooled; this v1 lumped model does
+                                     #   not simulate a coolant loop (flagged as a known Version-1 simplification,
+                                     #   consistent with "hardware/embedded deployment" being out of scope).
+surface_area_m2: 2.0                # [estimated] approximate pack footprint for an underbody-mounted EV pack
+
+# --- Safety-relevant electrical limits (physical, not policy) ---
+v_max: 420.0                        # [derived] 100 series x 4.2V/cell max (literature NMC cell upper limit)
+v_min: 300.0                        # [derived] 100 series x 3.0V/cell min (literature NMC cell lower limit)
+t_max_c: 60.0                       # [literature] widely-cited NMC hard thermal safety limit
+i_max_a: 160.0                      # [datasheet] Tata's quoted 60kW DC fast-charge spec / ~372V nominal
+                                     #   = ~161A, rounded to 160A (matches the real charger's current ceiling
+                                     #   rather than an arbitrary C-rate)
+
+# --- State of Health (monitoring only, not in reward) ---
+soh_initial: 1.0
+soh_degradation_per_ah_throughput: 0.0000015   # [assumption] tunable; not calibrated against real degradation
+                                                 #   data (explicitly out of scope per the implementation plan)
+
+# --- Numerical integration ---
+integration_method: "euler"         # "euler" (default) or "rk4"
+dt_seconds: 1.0                     # Simulation timestep

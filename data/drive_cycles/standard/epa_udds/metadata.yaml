@@ -1,0 +1,13 @@
+cycle_id: epa_udds
+name: EPA UDDS (Urban Dynamometer Driving Schedule)
+category: Urban
+publisher: United States Environmental Protection Agency (EPA)
+standard_reference: CFR Title 40 App I to Part 86
+license: "Public Domain (US Government Work, 17 U.S.C. \xA7 105)"
+duration_seconds: 1372
+sample_rate_hz: 1.0
+speed_units: m/s
+time_units: s
+verified: true
+redistribution_permitted: true
+resampling_applied: None (exact 1-Hz integer grid)

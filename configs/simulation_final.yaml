@@ -1,0 +1,22 @@
+# Frozen Final Simulation Configuration
+dt_seconds: 1.0
+max_episode_steps: 7200
+target_soc: 0.95
+
+train:
+  initial_soc_range: [0.10, 0.30]
+  ambient_temp_c: 25.0
+  ambient_min_c: 15.0
+  ambient_max_c: 35.0
+  mixed_ambient_sampler:
+    p_stress: 0.25
+    normal_range_c: [15.0, 35.0]
+    stress_range_c: [35.0, 45.0]
+
+eval:
+  initial_soc_grid: [0.10, 0.15, 0.20, 0.25, 0.30]
+  ambient_temp_grid_c: [15.0, 25.0, 35.0]
+
+eval_stress:
+  initial_soc_grid: [0.10, 0.20, 0.30]
+  ambient_temp_grid_c: [45.0, 50.0]

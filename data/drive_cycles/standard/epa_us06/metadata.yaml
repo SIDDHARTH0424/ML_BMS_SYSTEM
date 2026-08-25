@@ -1,0 +1,13 @@
+cycle_id: epa_us06
+name: EPA US06 (Supplemental FTP - Aggressive Driving)
+category: Aggressive
+publisher: United States Environmental Protection Agency (EPA)
+standard_reference: EPA SFTP US06 Schedule
+license: "Public Domain (US Government Work, 17 U.S.C. \xA7 105)"
+duration_seconds: 596
+sample_rate_hz: 1.0
+speed_units: m/s
+time_units: s
+verified: true
+redistribution_permitted: true
+resampling_applied: None (exact 1-Hz integer grid)

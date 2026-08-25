@@ -1,0 +1,42 @@
+# PPO configuration for the driving energy-management environment.
+# Deliberately separate from configs/ppo.yaml (the existing charging PPO)
+# per task §29 -- "DO NOT reuse the charging PPO checkpoint" and "Do not
+# modify configs/ppo.yaml unless absolutely necessary."
+#
+# Observation dimension: 11 (see environment/ev_energy_env.py's
+# OBSERVATION_FIELDS -- documented there, not duplicated as a bare number
+# here without a source).
+# Action dimension: 1, continuous, [-1, 1] (see configs/energy_management.yaml
+# for the action->power mapping and its documented sign convention).
+#
+# Hyperparameters below START from the same values as the charging PPO
+# (configs/ppo.yaml) as a reasonable, defensible starting point for a
+# smoke test -- NOT because they've been validated for this new,
+# different-dynamics environment. Per task §30 (staged PPO order), no
+# multi-seed or longer training should be run against these until a
+# smoke test and short diagnostic pass first.
+
+policy: "MlpPolicy"
+learning_rate: 0.0003
+n_steps: 2048          # smaller than charging PPO's 8192 -- episode_max_steps here (1200,
+                        #   configs/energy_management.yaml) is shorter than the charging env's
+                        #   7200-step episodes, so a smaller rollout buffer is more proportionate
+batch_size: 64
+n_epochs: 10
+gamma: 0.99
+gae_lambda: 0.95
+clip_range: 0.2
+ent_coef: 0.0
+vf_coef: 0.5
+max_grad_norm: 0.5
+target_kl: 0.01
+seed: 7                # same convention as the charging PPO's diagnostic seeds (7/21/42)
+
+policy_kwargs:
+  net_arch: [64, 64]    # same architecture as the charging PPO, as a starting point
+
+use_sde: false          # per Stable V3's own finding (audit/stable_v3_final_validation.md):
+squash_output: false    #   gSDE/squashed actions caused training instability in the charging
+                         #   env; starting from the known-stable configuration here too
+
+smoke_test_timesteps: 2048     # task §9/§19 -- short smoke test only, no full training

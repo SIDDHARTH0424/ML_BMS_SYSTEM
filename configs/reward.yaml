@@ -1,0 +1,80 @@
+# Reward Function Configuration
+# Reward = ChargingProgress - TemperaturePenalty - SafetyPenalty - OverrequestPenalty
+#          - SmoothnessPenalty - TimePenalty [- TerminalShortfallPenalty on truncation]
+# All weights are tunable; scale so each term contributes meaningfully.
+#
+# IMPORTANT — charging_progress scale derivation:
+# dSoC/step at full current (160A, 121Ah pack, dt=1s) = 160/(121*3600) = 3.67e-4.
+# A weight of 10 (an earlier draft value) gives only ~0.0037 reward/step at
+# full charging current — dwarfed by smoothness_penalty (up to 0.5/step) and
+# temperature_penalty, so the agent's easiest optimum was minimizing
+# penalties rather than charging. weight=1000 gives ~0.37 reward/step at
+# full current, the same order of magnitude as the penalty terms below.
+
+weights:
+  charging_progress: 1000.0    # see derivation above — per unit SoC gained this step
+  temperature_penalty: 0.05    # multiplied by max(0, T - t_penalty_start_c)
+  safety_penalty: 5.0          # multiplied by safety-layer intervention magnitude (0..1)
+  overrequest_penalty: 2.0     # v2: multiplied by (requested_A - applied_A) / i_max_A — see
+                                #   docs/results_and_discussion.md Section 4. Unlike safety_penalty
+                                #   (a FRACTIONAL magnitude, weak when the absolute waste is large
+                                #   but the ratio is small), this scales with the raw wasted current
+                                #   every step the safety layer clamps anything, even mid-episode —
+                                #   giving consistent pressure to learn the safe ceiling instead of
+                                #   blindly requesting i_max and letting the safety layer absorb it.
+  smoothness_penalty: 0.5      # multiplied by |I_t - I_(t-1)| / i_max_a
+  time_penalty: 0.05           # v3: constant per-step cost, applied EVERY step regardless of
+                                #   whether charging occurred. Fixes a real gap found in Run 008:
+                                #   the reward had no explicit incentive for finishing FASTER —
+                                #   charging_progress rewards SoC gained, but two policies reaching
+                                #   the same final SoC via different total step counts were treated
+                                #   as equally good by the RL objective (the environment's own
+                                #   evaluation metrics captured charging_time_s, but the reward the
+                                #   agent was actually optimizing did not). Weight matches
+                                #   temperature_penalty's order of magnitude; over a 5000-step
+                                #   difference between a fast and slow episode this is a -250
+                                #   cumulative difference, a meaningful fraction of total episode
+                                #   reward (~500-900 in early experiments).
+
+temperature_penalty_start_c: 40.0   # below this, no thermal penalty
+
+# v3: applied ONLY when an episode ends via truncation (max_episode_steps
+# reached) rather than reaching target_soc — penalizes finishing short of
+# the target, distinct from and in addition to the per-step time_penalty.
+# Fixes the Run 008 failure mode where a policy that charged to ~0.9246 and
+# then sat idle for the rest of a 7200-step episode was never explicitly
+# told that "close but truncated" is worse than "reached target". Weight
+# matches charging_progress's scale (1000/unit-SoC) for symmetry: a 0.025
+# shortfall (Run 008's 700k checkpoint) costs ~25 reward under this weight.
+terminal_shortfall_penalty_weight: 1000.0
+
+# --- Terminal bonuses/penalties ---
+target_reached_bonus: 50.0
+overvoltage_penalty: 20.0
+overtemperature_penalty: 20.0
+
+# --- State-Aware Thermal Reward (Fix Items 4, 11, Stage F Derivation) ---
+# Objective: fast charging in cool conditions + state-aware thermal derating under stress + reliable target completion.
+# Uses a state-aware quadratic formulation: thermal_weight * (normalized_excess^2) * normalized_q_gen
+#
+# ANALYTICAL GRADIENT DERIVATION (Stage F):
+#   - Progress reward gain per 40A: Delta_R_prog = 1000 * 40 / (121 * 3600) = +0.091827 / step
+#   - Normalized excess: ne = max(0, T - 33.0) / 22.0
+#   - Normalized heat difference (120A -> 160A): Delta_q_norm = (950.4 - 569.6) / 1190.4 = 0.319892
+#   - At T <= 33°C (ne = 0): Thermal penalty is 0.0 -> Instantaneous gradient favors 160A.
+#   - At T = 38°C (ne = 0.227): Delta_R_th = 3.0 * (0.227^2) * 0.320 = 0.0496 < 0.0918 -> Fast charging still favored.
+#   - At T >= 42°C (ne = 0.409): Delta_R_th = 3.0 * (0.409^2) * 0.320 = 0.1606 > 0.0918 (Net = -0.0688) ->
+#     The instantaneous reward gradient is constructed so that the thermal term outweighs the charging-progress term
+#     at representative high-temperature/high-current states. (Note: whole-episode PPO policy convergence depends on
+#     cumulative returns across all episode phases).
+#
+# Constants:
+#   thermal_reference_temp_c = 33.0 (optimization reference, distinct from 45C/55C safety limits)
+#   thermal_scale_c          = 22.0 (t_hard_cutoff_c - thermal_reference_temp_c = 55.0 - 33.0)
+#   thermal_q_reference_w    = 1190.4 W (steady-state max heat at i_max = 160A)
+#   thermal_weight           = 3.0 (empirically derived to create transition at ~40-42°C)
+thermal_enabled: true
+thermal_weight: 3.0
+thermal_reference_temp_c: 33.0
+thermal_scale_c: 22.0
+thermal_q_reference_w: 1190.4

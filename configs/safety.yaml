@@ -1,0 +1,44 @@
+# Shared Safety Layer Configuration
+# Applies identically to PPO and all baseline controllers.
+# Scaled to match the sourced pack parameters in battery.yaml
+# (121Ah / ~372V nominal / 300-420V window / 160A DC fast-charge ceiling).
+
+# --- Current limiting ---
+i_max_a: 160.0                       # Hard current ceiling (mirrors battery.yaml i_max_a — real 60kW DC charger spec)
+i_min_a: 0.0                         # No discharge in Version 1 (charging only)
+
+# --- Temperature protection ---
+t_derate_start_c: 45.0               # [literature] NMC charging derating typically begins ~45C
+t_hard_cutoff_c: 55.0                # [literature] below the 60C hard failure limit, with safety margin
+t_derate_curve: "linear"             # linear derating between start and cutoff
+
+# --- Progressive voltage tapering (emulates CCCV, avoids abrupt cutoff/oscillation) ---
+v_taper_start: 405.0                 # Begins tapering ~15V below the 420V hard cell-voltage limit
+v_hard_max: 420.0                    # Matches battery.yaml v_max (100s x 4.2V/cell)
+v_taper_curve: "linear"
+
+# --- SoC tapering near target ---
+soc_taper_start: 0.90                # SoC fraction at which tapering begins
+soc_taper_full: 1.00                 # SoC fraction at which current -> ~0
+soc_taper_curve: "linear"
+
+# --- Logging ---
+log_interventions: true
+intervention_fields: ["type", "requested_current", "applied_current", "magnitude"]
+
+# --- Discharge (driving EMS / regeneration) — NEW, additive, unused by
+# the existing charging safety_layer() function above. i_min_a stays at
+# 0.0 (its original meaning: "no discharge through safety_layer()" is
+# unchanged). These keys are only read by the new safety_layer_bidirectional()
+# function (safety/safety_layer.py) for the negative-current branch.
+discharge_i_max_a: 160.0             # [assumption] magnitude cap on discharge current; mirrors
+                                      #   i_max_a's magnitude since no separate Tata discharge-current
+                                      #   spec exists (motor_max_power_w in drivetrain.yaml is the real
+                                      #   binding constraint in practice, this is a battery-side backstop)
+v_undervoltage_taper_start: 320.0    # [assumption] begins tapering discharge above the pack's
+                                      #   nominal voltage (372V) minus margin; no Tata-published
+                                      #   undervoltage cutoff found
+v_hard_min: 300.0                    # [datasheet] matches battery.yaml's documented 300-420V pack window
+soc_discharge_taper_start: 0.10      # [assumption] mirror of soc_taper_start's charging-side pattern,
+                                      #   symmetric low-SoC equivalent; no Tata-published figure
+soc_discharge_empty: 0.00            # SoC fraction at which discharge current -> 0

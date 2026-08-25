@@ -1,0 +1,2 @@
+candidate,seed,ent_coef,timesteps,mean_wh_per_km,mean_regen_recovery_pct,cycles_beating_rule_based,cycles_total
+Cand_B2_100k,21,0.01,100000,129.46,94.85999999999999,0,4

@@ -1,0 +1,3 @@
+controller,sample_size_N,P_ceiling_active,P_req_gt_ceiling,P_req_le_ceiling_given_active,P_appl_eq_ceiling,mean_requested_current_a,mean_applied_current_a
+Max Current Baseline,31419,0.08994557433400172,0.08994557433400172,0.0,1.0,160.0,155.9911167874259
+PPO Baseline (run_001),31419,0.08994557433400172,0.08994557433400172,0.0,1.0,160.0,155.9911167874259

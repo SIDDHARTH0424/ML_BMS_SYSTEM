@@ -1,0 +1,32 @@
+# Frozen Final Charging BMS Reward Configuration (Candidate A1)
+# Candidate A1 -- short diagnostic validated, production-path re-gate pending.
+# The original flat-LR short-gate diagnostic passed 7/7 (audit/charging_final_candidate_evaluation.md),
+# but a later investigation found the production build_agent() pipeline used a
+# different (decaying) LR schedule at the time, and Candidate A1 failed the
+# gate when re-run through that production path (audit/charging_A1_regate_via_build_agent_report.md).
+# That schedule mismatch has since been fixed in agents/train_ppo.py
+# (build_agent() now uses a flat LR, matching what was gated) -- see
+# audit/charging_A1_regate_flat_lr_fixed_report.md for the re-run confirming
+# the fix works; a full 1,000,000-step run is still required before this
+# config is fully cleared for long training.
+weights:
+  charging_progress: 1000.0
+  temperature_penalty: 0.05
+  safety_penalty: 5.0
+  overrequest_penalty: 2.0
+  smoothness_penalty: 0.5
+  time_penalty: 0.05
+
+temperature_penalty_start_c: 40.0
+terminal_shortfall_penalty_weight: 1000.0
+
+target_reached_bonus: 50.0
+overvoltage_penalty: 20.0
+overtemperature_penalty: 20.0
+
+# Validated State-Aware Thermal Reward Parameters (Candidate A1)
+thermal_enabled: true
+thermal_weight: 2.5
+thermal_reference_temp_c: 35.0
+thermal_scale_c: 20.0
+thermal_q_reference_w: 1190.4

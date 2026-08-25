@@ -1,0 +1,5 @@
+controller,cycle_id,steps,distance_km,mean_speed_kmh,discharge_energy_wh,regen_energy_wh,net_energy_wh,wh_per_km,regen_recovery_fraction,min_soc,final_soc,delta_soc,max_temperature_c,avg_temperature_c,total_power_deficit_wh,safety_interventions,safety_intervention_rate,seed,candidate,ent_coef,timesteps
+Cand_B3_100k_seed7,epa_udds,1371,10.418,27.4,1065.95,164.58,901.37,86.52,1.0,0.4793,0.4796,0.0204,25.04,25.02,2.29,0,0.0,7,Cand_B3_100k,0.01,100000
+Cand_B3_100k_seed7,epa_hwfet,764,16.696,78.7,2211.53,31.07,2180.46,130.59,0.9997,0.45,0.4505,0.0495,25.13,25.08,4.65,0,0.0,7,Cand_B3_100k,0.01,100000
+Cand_B3_100k_seed7,epa_us06,595,12.275,74.3,2306.84,106.55,2200.29,179.25,1.0,0.4498,0.45,0.05,25.27,25.15,5.01,0,0.0,7,Cand_B3_100k,0.01,100000
+Cand_B3_100k_seed7,wltp_class3b,1799,23.443,46.9,2906.85,146.57,2760.28,117.75,0.9988,0.4364,0.4373,0.0627,25.21,25.04,38.15,0,0.0,7,Cand_B3_100k,0.01,100000

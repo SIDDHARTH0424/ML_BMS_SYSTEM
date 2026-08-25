@@ -1,0 +1,52 @@
+# Simulation Configuration
+
+dt_seconds: 1.0
+max_episode_steps: 7200        # 2 hours at 1s steps (safety net; normally terminates earlier)
+target_soc: 0.95
+
+mode: "train"                  # "train" or "eval" — env reads this to pick sampling strategy
+
+# Standard training distribution (used by run_001, Exp A, Exp B — UNCHANGED for comparability)
+train:
+  initial_soc_range: [0.10, 0.30]
+  ambient_temp_range_c: [15.0, 35.0]
+
+# Aliased for explicitness in Exp C code (identical values to train block above)
+train_normal:
+  initial_soc_range: [0.10, 0.30]
+  ambient_temp_range_c: [15.0, 35.0]
+  description: "Standard operating ambient — retained for run_001 comparability"
+
+# HIGH-AMBIENT STRESS-TEST distribution (Experiment C only)
+# NOTE: 35-45°C ambient is a CONTROLLED STRESS-TEST for exposing the thermal
+# reward mechanism to PPO. It is NOT a claim about normal Tata Nexon EV
+# operating conditions. These temperatures exceed typical ambient ranges for
+# standard drive cycle testing (which uses 14-35°C per regulatory standards).
+train_stress:
+  initial_soc_range: [0.10, 0.30]
+  ambient_temp_range_c: [35.0, 45.0]
+  description: "High-ambient STRESS-TEST — not a claim about normal operating conditions"
+
+# Experiment C mixed sampler configuration
+# 75% normal [15,35°C] + 25% stress [35,45°C]
+# p_stress and p_normal are logged explicitly with every Exp C run artifact.
+# Effective theoretical mean ambient = 0.75 * 25.0 + 0.25 * 40.0 = 28.75°C
+train_expC_mixed:
+  p_stress: 0.25       # Probability of sampling from stress_range_c
+  p_normal: 0.75       # Probability of sampling from normal_range_c
+  normal_range_c: [15.0, 35.0]
+  stress_range_c: [35.0, 45.0]
+
+
+eval:
+  initial_soc_grid: [0.10, 0.15, 0.20, 0.25, 0.30]
+  ambient_temp_grid_c: [15.0, 25.0, 35.0]
+  fixed_seed: 42
+
+# Extended Thermal Stress Evaluation (Exp C only — reported in a SEPARATE table,
+# NEVER averaged with the standard eval grid above)
+eval_stress:
+  initial_soc_grid: [0.10, 0.20, 0.30]
+  ambient_temp_grid_c: [45.0, 50.0]
+  fixed_seed: 42
+  description: "Thermal stress evaluation — separate from standard 15-scenario grid"
