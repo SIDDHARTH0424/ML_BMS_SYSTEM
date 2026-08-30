@@ -1,15 +1,15 @@
 # RL-BMS & EV Driving Energy Management (RL-BMS-Driving)
 
-A scientifically grounded, physics-informed Reinforcement Learning framework for **EV Battery Charging Control** and **Driving Energy Management**, targeting the **Tata Nexon EV Long Range** platform (45 kWh usable, 121 Ah pack, 160 A DC Fast Charge, 300–420 V operating window).
+A scientifically grounded, physics-informed Reinforcement Learning (PPO) framework for **EV Battery Charging Control** and **Driving Energy Management (EMS)**, targeting the **Tata Nexon EV Long Range** platform (45 kWh usable, 121 Ah pack, 160 A DC Fast Charge, 300–420 V operating window).
 
 ---
 
-## 1. Project Overview & Dual Research Tracks
+## 1. Project Overview & Architecture
 
-The project investigates whether physics-constrained Reinforcement Learning (PPO) provides a measurable advantage over rule-based controllers under well-defined, safety-governed objectives.
+The framework investigates whether physics-constrained Reinforcement Learning (PPO) provides a measurable advantage over rule-based controllers under well-defined, safety-governed automotive objectives.
 
 ```
-                               rl-bms-Driving Framework
+                              rl-bms-Driving Framework
                                          │
         ┌────────────────────────────────┴────────────────────────────────┐
         ▼                                                                 ▼
@@ -18,122 +18,128 @@ Track A: Charging BMS                                            Track B: Drivin
 ├── Shared Supervisory Safety Layer (Taper/Derate)               ├── Drivetrain Efficiency & Regenerative Braking
 ├── PPO Fast-Charging Policy                                     ├── Bidirectional Safety Layer (Charge/Discharge)
 ├── Baselines: Max Current, CC (1C), CCCV, Adaptive              ├── Standard Drive Cycles (UDDS, HWFET, US06, WLTP)
-└── Evaluated on 15 Standard Scenarios                           └── Rule-Based EMS vs Driving PPO Benchmark
+└── Evaluated on 15 Standard Scenarios                           ├── 9-State Thermal Safety Controller
+                                                                 └── Interactive Pygame Engineering Visualizer
 ```
 
 ---
 
-## 2. Track A: Battery Charging BMS
+## 2. Key Features
 
-### Battery Model (1RC Equivalent Circuit Model)
-- **Cell Chemistry / Specs**: Large-format NMC cells in a 121 Ah pack configuration.
-- **Electrical Dynamics**: $V_t(t) = \text{OCV}(\text{SoC}) + I(t) R_0 + V_{rc}(t)$, with polarization RC branch dynamics $\frac{dV_{rc}}{dt} = \frac{I}{C_1} - \frac{V_{rc}}{R_1 C_1}$.
-- **Thermal Dynamics**: Joule heating $\dot{Q}_{\text{gen}} = I^2 R_0 + \frac{V_{rc}^2}{R_1}$, lumped convective dissipation $\dot{Q}_{\text{loss}} = h A (T - T_{\text{amb}})$.
-
-### Safety Supervisory Layer
-- Rule-based supervisor applied identically across all controllers:
-  - Current ceiling enforcement ($I \le I_{\text{max}} = 160\text{ A}$)
-  - Progressive thermal derating ($45^\circ\text{C}$ ramp to $55^\circ\text{C}$ hard cutoff)
-  - Progressive voltage tapering ($415\text{ V}$ ramp to $420\text{ V}$ hard ceiling)
-  - High-SoC saturation taper ($90\%$ SoC ramp to $95\%$ target)
-
-### Verified Findings (`run_001` & Diagnostics)
-- Baseline `runs/run_001/` (`CHARGING_PPO_BASELINE_1M`) is strictly preserved as historical evidence.
-- PPO converges to behavior identical to Max Current charging under the 15-scenario grid because the progress reward ($+0.0918$/step per 40A) structurally dominates the thermal cost ($-0.0141$/step per 40A) by a 6.5:1 to 27:1 ratio.
-- Action sensitivity tests confirm RL retains full control authority across 91% of charging steps; the safety supervisor only binds during the final 9% (SoC taper).
+- **Authoritative Battery Equivalent Circuit Model (ECM)**:
+  - 1RC Thevenin electrical dynamics: $V_t(t) = \text{OCV}(\text{SoC}) + I(t) R_0 + V_{rc}(t)$ with polarization RC branch dynamics.
+  - Lumped thermal dissipation with ambient coupling: $\dot{Q}_{\text{gen}} = I^2 R_0 + \frac{V_{rc}^2}{R_1}$, $\dot{Q}_{\text{loss}} = h A (T - T_{\text{amb}})$.
+- **Bidirectional Automotive Safety Layer**:
+  - Enforces continuous current ceilings ($I \le 160\text{ A}$), progressive thermal derating ($45^\circ\text{C} \to 55^\circ\text{C}$ cutoff), and voltage bounds ($300\text{ V} \le V_t \le 420\text{ V}$).
+  - Dynamically calculates power deficit and mechanical friction braking intervention.
+- **Authoritative 9-State Thermal State Machine**:
+  - `OPTIMAL` $\to$ `ELEVATED_THERMAL` $\to$ `DERATING_ACTIVE` $\to$ `CRITICAL` $\to$ `STOP_REQUESTED` $\to$ `DECELERATING` $\to$ `STOPPED` $\to$ `COOLING` $\to$ `SAFE_TO_RESUME`.
+  - State-relative hysteresis prevention and speed recommendation calculations.
+- **Professional Pygame Interactive Simulator**:
+  - 24px unified grid layout, Tesla/Grafana-style numeric unit de-emphasis, colorblind-accessible icon badges, and live oscilloscope telemetry traces.
+  - Seamless dual-mode operation: **Research Benchmark Mode** (pure frozen standard cycles) vs. **Demo Mode** (interactive safety stops & ECM cooling).
+- **Comprehensive Test Suite**:
+  - **261 / 261 automated unit and integration tests** passing with 100% coverage across dynamics, rewards, safety layers, and visualizer components.
 
 ---
 
-## 3. Track B: Driving Energy Management (EMS)
+## 3. Standard Regulatory Drive Cycles
 
-### Vehicle & Drivetrain Dynamics (Tata Nexon EV)
-- **Longitudinal Dynamics**: Aerodynamic drag ($C_d = 0.32$, $A_f = 2.42\text{ m}^2$), rolling resistance ($C_{rr} = 0.012$), grade resistance, and inertial force ($m = 1400\text{ kg}$).
-- **Drivetrain & Regen**: Motor peak power $106.4\text{ kW}$, max regen power $25.0\text{ kW}$, combined motor/inverter efficiency mapping (90% nominal).
-- **Bidirectional Safety**: Constrains motor draw during low-voltage/low-SoC conditions and limits regenerative braking during cold battery or high-voltage states.
+The environment includes official 1.0 Hz regulatory driving test schedules in `data/drive_cycles/standard/`:
 
-### Standard Drive Cycles Repository (`data/drive_cycles/standard/`)
-All driving cycles are official regulatory test schedules sampled at 1.0 Hz matching the simulation timestep:
-- **EPA UDDS** (`data/drive_cycles/standard/epa_udds/cycle.csv`): 1,372 s, 10.42 km, urban stop-and-go.
-- **EPA HWFET** (`data/drive_cycles/standard/epa_hwfet/cycle.csv`): 765 s, 16.70 km, highway cruising.
-- **EPA US06** (`data/drive_cycles/standard/epa_us06/cycle.csv`): 596 s, 12.28 km, high acceleration / aggressive.
-- **WLTP Class 3b** (`data/drive_cycles/standard/wltp_class3b/cycle.csv`): 1,800 s, 23.44 km, international mixed.
+| Cycle | Description | Duration | Distance | Target Profile |
+| :--- | :--- | :--- | :--- | :--- |
+| **EPA UDDS** | Urban Dynamometer Driving Schedule | 1,372 s | 10.42 km | City stop-and-go |
+| **EPA HWFET** | Highway Fuel Economy Test | 765 s | 16.70 km | Smooth highway cruising |
+| **EPA US06** | Supplemental FTP (Aggressive) | 596 s | 12.28 km | High acceleration & high power demand |
+| **WLTP Class 3b** | Worldwide Harmonised Light Vehicle Test | 1,800 s | 23.44 km | Dynamic multi-phase mixed driving |
 
 ---
 
-## 4. How to Run Tests & Experiments
+## 4. Quick Start & Execution
 
 ### 1. Environment Setup
-```bash
-# Activate virtual environment
-.\venv\Scripts\Activate.ps1
+```powershell
+# Clone the repository
+git clone https://github.com/SIDDHARTH0424/ML_BMS_SYSTEM.git
+cd ML_BMS_SYSTEM
 
-# Run complete unit test suite (193 tests)
-python -m pytest tests/ -v
+# Create and activate virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Install requirements
+pip install -r requirements.txt
 ```
 
-### 2. Track A: Charging Diagnostics & Baselines
-```bash
-# Run Action-Sensitivity test (control authority)
-python -m experiments.action_sensitivity_test
-
-# Run Safety-Dominance quantification (N >= 5,000 steps)
-python -m experiments.safety_dominance_test
-
-# Run Baseline Reward Decomposition & Thermal Engagement test
-python -m experiments.baseline_reward_comparison
-
-# Run 3-Seed Charging A/B Diagnostic (seeds 7, 21, 42)
-python -m experiments.diagnostic_ab
+### 2. Launch Interactive Pygame Simulator
+```powershell
+python -m app.interactive_ev_simulator
 ```
 
-### 3. Track B: Driving EMS Evaluation & PPO Training
-```bash
-# Validate all standard drive cycles
-python -m experiments.validate_drive_cycles
+**Simulator Controls**:
+- `PLAY / PAUSE`: Toggle live simulation execution.
+- `STEP`: Advance single simulation step ($1.0\text{ s}$).
+- `RESET`: Reset episode to initial conditions.
+- `DRIVING / CHARGING`: Switch between Driving EMS and DC Fast-Charging modes.
+- `RESEARCH / DEMO`: Toggle pure benchmark evaluation vs. interactive thermal safety stop demo.
+- `PPO / BASELINE`: Toggle between pre-trained PPO neural policy and baseline rule-based controller.
+- `UDDS / HWFET / US06 / WLTP`: Cycle through standard driving schedules.
+- `STOP / RESUME`: Trigger vehicle safety deceleration and resume once cooled below $42.0^\circ\text{C}$.
+- `Ambient [+] / [-]`: Adjust ambient temperature ($0^\circ\text{C} \to 45^\circ\text{C}$).
+- `Sim Speed [+] / [-]`: Adjust playback speed multiplier ($0.5\times \to 10\times$).
 
-# Benchmark Rule-Based EMS across all cycles
-python -m training.evaluate_drive_ems --controller rule_based --all-cycles
+---
 
-# Run 3-Seed Driving PPO Diagnostic & Benchmark (seeds 7, 21, 42)
-python -m experiments.diagnostic_driving_ppo
+## 5. Verification & Testing
+
+### Run Complete Test Suite (261 Tests)
+```powershell
+pytest tests/ -v
+```
+
+### Run Master 10-Phase Project Verification
+```powershell
+python scripts/verify_project.py
+```
+
+### Run Multi-Cycle Benchmark Evaluation
+```powershell
+# Run benchmark sweep across all 4 drive cycles with multi-seed PPO models
+python run_final_evaluation.py
+
+# Aggregate statistical results
+python aggregate_results.py
 ```
 
 ---
 
-## 5. Audit & Research Reports
+## 6. Pre-Trained Models (`final_models/`)
 
-Complete empirical reports and verified datasets are located in `audit/`:
-- `audit/run001_diagnosis.md`: Preserved baseline diagnosis for run_001.
-- `audit/charging_reward_balance.md`: Empirical Stage 2 reward component decomposition.
-- `audit/action_sensitivity_report.md`: Control authority verification across 11 battery states.
-- `audit/safety_dominance_report.md`: Safety ceiling active percentage (8.99%) analysis.
-- `audit/diagnostic_ab_results.md`: Complete 3-seed A/B diagnostic findings.
-- `audit/real_drive_cycle_validation.md`: Kinematic and mathematical validation of standard drive schedules.
-- `audit/driving_reward_balance.md`: Empirical driving reward balance from multi-cycle execution.
-- `audit/final_project_validation.md`: Final synthesis and scientific claims audit.
+Pre-trained, fully verified model weights are included directly in the repository:
+
+- **Driving EMS (Track B)**:
+  - `final_models/driving_B3_100k_seed7/ppo_driving_100000_steps.zip`
+  - `final_models/driving_B3_100k_seed21/ppo_driving_100000_steps.zip`
+  - `final_models/driving_B3_100k_seed42/ppo_driving_100000_steps.zip`
+- **Charging BMS (Track A)**:
+  - `final_models/charging_A1_50k_seed7/trained_model.zip`
+  - `final_models/charging_A1_50k_seed21/trained_model.zip`
+  - `final_models/charging_A1_50k_seed42/trained_model.zip`
 
 ---
 
-## 6. Known Limitations (Phase 1)
+## 7. Audit Reports & Research Documentation
 
-1. **Open-Loop Prescribed Speed**: The driving EMS follows the prescribed vehicle velocity trace. If electrical power is constrained, a power deficit is recorded and penalized; closed-loop vehicle speed adaptation is out of scope for Phase 1.
-2. **Lumped Convective Thermal Model**: Both charging and driving tracks model battery heat dissipation via lumped convective approximation rather than an active liquid coolant loop.
-3. **SoH Tracking**: Battery degradation is tracked via coulomb-throughput accumulation for logging only; SoH reward optimization remains deliberately disabled.
+Detailed empirical reports, verification proofs, and scientific analysis documents are located in:
+- `COMPLIANCE.md`: Comprehensive audit compliance matrix.
+- `FINAL_OUTPUT_SUMMARY.md`: Master Claude Code Task executive summary.
+- `FINAL_VERIFICATION_SUMMARY.md`: Full 10-phase verification logs.
+- `results_and_discussion.md`: Quantitative multi-cycle benchmark analysis.
+- `audit/FINAL_VERIFICATION/FINAL_VERIFICATION_REPORT.md`: Authoritative verification report.
 
-## Final frozen training profiles
+---
 
-The repository contains explicit frozen configuration bundles so long training cannot accidentally use the development configs.
+## 8. License
 
-Charging (Track A):
-
-```powershell
-python -m training.train --run-name charging_final_1m --config-dir configs/final_charging --stages 1 2 3 4
-```
-
-Driving (Track B):
-
-```powershell
-python -m training.train_drive_ems --train --run-name driving_final_1m --config-dir configs/final_driving --drive-cycle data/drive_cycles/standard/wltp_class3b/cycle.csv --timesteps 1000000 --seed 7
-```
-
-Use a separate run name/seed for each final driving seed. The final profiles are frozen copies of the validated Candidate A1/B3 configurations.
+Distributed under the MIT License. See `LICENSE` for more information.
