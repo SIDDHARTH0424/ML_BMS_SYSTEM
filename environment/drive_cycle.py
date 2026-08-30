@@ -117,7 +117,13 @@ class DriveCycle:
                 f"Drive cycle must have at least 2 rows to define a timestep: {csv_path}"
             )
 
-        # time strictly increasing, positive timestep
+        self.dt_seconds = times[1] - times[0]
+        if self.dt_seconds <= 0.0:
+            raise DriveCycleValidationError(
+                f"Initial timestep must be positive (got {self.dt_seconds}) in {csv_path}"
+            )
+
+        # Time strictly increasing and uniform timestep spacing
         for i in range(1, len(times)):
             dt = times[i] - times[i - 1]
             if dt <= 0.0:
@@ -125,8 +131,11 @@ class DriveCycle:
                     f"Row {i}: time_s must strictly increase (got dt={dt} at t={times[i]}) "
                     f"in {csv_path}"
                 )
-
-        self.dt_seconds = times[1] - times[0]
+            if abs(dt - self.dt_seconds) > 1e-3:
+                raise DriveCycleValidationError(
+                    f"Row {i}: irregular timestep spacing detected (expected {self.dt_seconds:.4f}s, "
+                    f"got {dt:.4f}s at t={times[i]}) in {csv_path}"
+                )
 
         # Derive acceleration where absent: a_t = (v_t - v_{t-1}) / dt.
         # First sample's acceleration, if not provided, has no prior sample

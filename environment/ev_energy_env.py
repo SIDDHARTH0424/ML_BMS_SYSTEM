@@ -170,10 +170,6 @@ class EVEnergyEnv(gym.Env):
             friction_braking_w = available_w - used_regen_w
             feasible_desired_power_w = used_regen_w  # signed, charge = positive
 
-        # Power -> current: I = P / V (task §14), using the pre-step
-        # terminal voltage as the conversion estimate (consistent with
-        # how the rest of this project estimates voltage before stepping
-        # the ECM -- see battery_env.py's own estimated_voltage usage).
         v_est = self.ecm.terminal_voltage(self._state, 0.0)
         requested_current_a = feasible_desired_power_w / v_est if v_est > 0.0 else 0.0
 
@@ -184,6 +180,18 @@ class EVEnergyEnv(gym.Env):
         prev_state = self._state
         new_state = self.ecm.step(prev_state, applied_current_a, ambient_temp_c=self._ambient_temp_c)
         applied_power_w = applied_current_a * v_est
+
+        # Post-safety power deficit and friction braking accounting:
+        # If safety derates discharge or limits regen, the deficit and friction braking
+        # reflect the actual safely delivered/accepted power.
+        if forces.p_wheel >= 0.0:
+            actual_discharge_w = max(0.0, -applied_power_w)
+            power_deficit_w = max(0.0, required_discharge_w - actual_discharge_w)
+            friction_braking_w = 0.0
+        else:
+            actual_regen_w = max(0.0, applied_power_w)
+            friction_braking_w = max(0.0, available_w - actual_regen_w)
+            power_deficit_w = 0.0
 
         reward, components = self._compute_reward(
             prev_state=prev_state, new_state=new_state, applied_current_a=applied_current_a,
@@ -272,3 +280,18 @@ class EVEnergyEnv(gym.Env):
             float(np.clip(trip_progress, 0.0, 1.0)),
         ]
         return np.array(vals, dtype=np.float32)
+
+    # ------------------------------------------------------------------ #
+    # Public Accessors
+    # ------------------------------------------------------------------ #
+    def get_state(self) -> BatteryState:
+        """Return the current battery ECM state."""
+        return self._state
+
+    def get_drive_cycle(self) -> DriveCycle:
+        """Return the underlying drive cycle object."""
+        return self._drive_cycle
+
+    def get_observation(self) -> np.ndarray:
+        """Public interface to generate the current observation vector."""
+        return self._get_observation()

@@ -1,0 +1,48 @@
+# Unified Thermal Management & Safety Configuration for Driving Mode
+# Authoritative source for UI state machine, driver guidance, and demo safety stops.
+
+thermal_management:
+  mode: "research"   # "research" (trace-following benchmark) | "demo" (interactive safety demonstration)
+
+  thermal_regions:
+    optimal:
+      threshold_c: 33.0
+
+    elevated_stress:
+      min_temp_c: 33.0
+      max_temp_c: 45.0
+
+    derating:
+      min_temp_c: 45.0
+      max_temp_c: 55.0
+
+    critical:
+      min_temp_c: 55.0
+
+  safety_derating:
+    rated_current_a: 160.0
+    start_temp_c: 45.0
+    cutoff_temp_c: 55.0
+
+  hysteresis:
+    elevated_exit_c: 32.5
+    derating_exit_c: 44.5
+
+  recovery:
+    critical_to_cooling_threshold_c: 52.0
+    safe_resume_temperature_c: 42.0
+
+  speed_recommendation:
+    enabled: true
+    active_speed_control: false
+    minimum_speed_ratio: 0.30
+    maximum_speed_ratio: 1.00
+
+  cooling:
+    source: "ecm"
+    require_validated_passive_cooling: true
+
+  demo_stop:
+    enabled: true
+    max_deceleration_mps2: 2.0
+    stop_speed_threshold_kmh: 0.01

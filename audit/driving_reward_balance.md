@@ -1,6 +1,6 @@
 # Driving Reward Balance Audit
 
-**Controller**: `PPO_ppo_driving_100000_steps`  
+**Controller**: `PPO_ppo_driving_100000_steps.zip`  
 **Evaluation Type**: Standardized drive-cycle evaluation of a simulated Tata Nexon EV Long Range  
 **Cycles Evaluated**: EPA UDDS (Urban), EPA HWFET (Highway), EPA US06 (Aggressive), WLTP Class 3b (Mixed)  
 **Total Evaluated Steps**: 4,529  
@@ -11,9 +11,9 @@
 
 | Component | Mean | Std | Min | Max | % Contribution |
 |---|---|---|---|---|---|
-| `tracking_error` | 0.000259 | 0.003358 | 0.000000 | 0.099442 | **0.32%** |
-| `energy_cost` | 0.066901 | 0.080269 | 0.000000 | 0.505781 | **82.17%** |
-| `regen_recovery` | 0.014263 | 0.041565 | 0.000000 | 0.570314 | **17.52%** |
+| `tracking_error` | 0.000042 | 0.000642 | 0.000000 | 0.026948 | **0.05%** |
+| `energy_cost` | 0.067054 | 0.080217 | 0.000000 | 0.505781 | **82.69%** |
+| `regen_recovery` | 0.013991 | 0.041557 | 0.000000 | 0.570314 | **17.25%** |
 | `thermal_stress` | 0.000000 | 0.000000 | 0.000000 | 0.000000 | **0.00%** |
 | `safety_penalty` | 0.000000 | 0.000000 | 0.000000 | 0.000000 | **0.00%** |
 
@@ -21,9 +21,9 @@
 
 ## 2. Total Reward Statistics
 
-- **Mean per-step reward**: 0.006200
-- **Std**: 0.062891
-- **Min**: -0.149164, **Max**: 0.771639
+- **Mean per-step reward**: -0.013184
+- **Std**: 0.034003
+- **Min**: -0.151734, **Max**: 0.244956
 
 ## 3. Findings
 

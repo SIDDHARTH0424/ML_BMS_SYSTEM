@@ -1,0 +1,5 @@
+controller,cycle_id,steps,distance_km,mean_speed_kmh,discharge_energy_wh,regen_energy_wh,net_energy_wh,wh_per_km,regen_recovery_fraction,min_soc,final_soc,delta_soc,max_temperature_c,avg_temperature_c,total_power_deficit_wh,safety_interventions,safety_intervention_rate
+PPO_seed7,epa_udds,1371,10.418,27.4,1067.22,164.49,902.74,86.66,0.9994,0.4792,0.4795,0.0205,25.04,25.02,1.02,0,0.0
+PPO_seed7,epa_hwfet,764,16.696,78.7,2213.57,31.07,2182.49,130.72,0.9997,0.4499,0.4505,0.0495,25.13,25.08,2.61,0,0.0
+PPO_seed7,epa_us06,595,12.275,74.3,2309.05,106.55,2202.49,179.43,1.0,0.4497,0.45,0.05,25.27,25.15,2.81,0,0.0
+PPO_seed7,wltp_class3b,1799,23.443,46.9,2916.81,146.48,2770.33,118.17,0.9982,0.4361,0.4371,0.0629,25.21,25.04,28.19,0,0.0

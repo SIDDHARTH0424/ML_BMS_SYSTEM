@@ -1,0 +1,9 @@
+steps,distance_km,mean_speed_kmh,discharge_energy_wh,regen_energy_wh,net_energy_wh,wh_per_km,regen_recovery_fraction,min_soc,final_soc,delta_soc,max_temperature_c,avg_temperature_c,total_power_deficit_wh,safety_interventions,safety_intervention_rate,controller,cycle_id,ambient_temp_c
+1371,10.418,27.4,1068.24,164.58,903.66,86.74,1.0,0.4792,0.4795,0.0205,25.04,25.02,0.0,0,0.0,RuleBasedEMS,epa_udds,25.0
+1371,10.418,27.4,1068.24,164.58,903.66,86.74,1.0,0.4792,0.4795,0.0205,30.04,30.02,0.0,0,0.0,RuleBasedEMS,epa_udds,30.0
+1371,10.418,27.4,1068.24,164.58,903.66,86.74,1.0,0.4792,0.4795,0.0205,33.04,33.02,0.0,0,0.0,RuleBasedEMS,epa_udds,33.0
+1371,10.418,27.4,1068.24,164.58,903.66,86.74,1.0,0.4792,0.4795,0.0205,40.04,40.02,0.0,0,0.0,RuleBasedEMS,epa_udds,40.0
+1371,10.418,27.4,1068.24,164.58,903.66,86.74,1.0,0.4792,0.4795,0.0205,45.04,45.02,0.0,0,0.0,RuleBasedEMS,epa_udds,45.0
+1371,10.418,27.4,1068.24,164.58,903.66,86.74,1.0,0.4792,0.4795,0.0205,50.04,50.02,0.0,0,0.0,RuleBasedEMS,epa_udds,50.0
+1371,10.418,27.4,0.0,0.0,0.0,0.0,,0.5,0.5,0.0,55.0,55.0,0.0,1047,0.7637,RuleBasedEMS,epa_udds,55.0
+1371,10.418,27.4,0.0,0.0,0.0,0.0,,0.5,0.5,0.0,60.0,60.0,0.0,1047,0.7637,RuleBasedEMS,epa_udds,60.0

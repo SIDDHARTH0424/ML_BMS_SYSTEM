@@ -1,9 +1,44 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
 .venv/
 venv/
-runs/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Pytest / Unit test / Coverage
 .pytest_cache/
-*.zip
-RESULTS/
+.coverage
+.coverage.*
+.cache
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# IDE and OS files
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+.claude/
+.gemini/
+
+# Large experimental raw runs & simulation logs (reproducible via scripts)
+runs/
+experiments/
+RESULTS/
+
+# Ignore zip archives, EXCEPT the pre-trained weights in final_models
+*.zip
+!final_models/
+!final_models/**/*.zip
