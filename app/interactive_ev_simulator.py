@@ -1891,17 +1891,12 @@ class InteractiveSimulator:
             y_offset += 34
 
     def _draw_live_charts(self) -> None:
-        """Render synchronized oscilloscope traces (X=408, Y=410, W=1008, H=466, §13, §14)."""
+        """Render synchronized oscilloscope traces with dynamic adaptive scaling and clear Y-axis labels (§13, §14)."""
         chart_rect = pygame.Rect(408, 410, 1008, 466)
         self.rounded_panel(chart_rect, radius=10)
 
         self.draw_text("LIVE DYNAMICS & CONTROL TRACES", chart_rect.x + 16, chart_rect.y + 14, UI_TEXT_PRIMARY, self.font_title)
 
-        # 4 Subplots with 14px gap and consistent scientific mappings (§13):
-        # 1. Temperature: Red / thermal
-        # 2. Speed: White / Light neutral (Ref) vs Amber (Rec)
-        # 3. Power: Cyan / Blue (Power) vs Red (Deficit)
-        # 4. Multi-scale Control: Green (SOC), Blue (Safety Ceiling), Purple (Action)
         sub_h = 88
         gap = 14
         y1 = chart_rect.y + 44
@@ -1910,28 +1905,63 @@ class InteractiveSimulator:
         y4 = y3 + sub_h + gap
         chart_w = 976
 
+        # ── 1. Temperature Subplot (Dynamic Auto-Scale with min 4°C window) ──
+        temp_pts = self.trace_temp.y
+        if temp_pts:
+            t_curr_min = min(temp_pts)
+            t_curr_max = max(temp_pts)
+            t_span = max(4.0, (t_curr_max - t_curr_min) * 1.3)
+            t_mid = (t_curr_max + t_curr_min) / 2.0
+            t_y_min = math.floor(t_mid - t_span / 2.0)
+            t_y_max = math.ceil(t_mid + t_span / 2.0)
+        else:
+            t_y_min, t_y_max = 24.0, 32.0
+
         self._draw_single_trace(
             chart_rect.x + 16, y1, chart_w, sub_h,
-            [self.trace_temp], ["Temperature (°C)"], [UI_CRITICAL],
-            y_min=20.0, y_max=60.0
+            [self.trace_temp], ["Battery Temp"], [UI_CRITICAL],
+            y_min=t_y_min, y_max=t_y_max, unit="°C",
+            fill_primary=True,
         )
+
+        # ── 2. Speed Subplot (Dynamic Auto-Scale matching peak speed) ────────
+        spd_pts = (self.trace_speed.y or [0.0]) + (self.trace_rec_speed.y or [0.0])
+        spd_peak = max(spd_pts) if spd_pts else 0.0
+        spd_y_max = max(35.0, math.ceil((spd_peak * 1.15 + 5.0) / 10.0) * 10.0)
+
         self._draw_single_trace(
             chart_rect.x + 16, y2, chart_w, sub_h,
-            [self.trace_speed, self.trace_rec_speed], ["Ref Speed (km/h)", "Recommended (km/h)"], [UI_TEXT_PRIMARY, UI_WARNING],
-            y_min=0.0, y_max=130.0
+            [self.trace_speed, self.trace_rec_speed], ["Ref Speed", "Recommended"], [UI_TEXT_PRIMARY, UI_WARNING],
+            y_min=0.0, y_max=spd_y_max, unit="km/h",
+            fill_primary=True,
         )
+
+        # ── 3. Power Subplot (Dynamic Auto-Scale with visible zero baseline) ─
+        pwr_pts = self.trace_power.y
+        if pwr_pts:
+            p_min = min(pwr_pts)
+            p_max = max(pwr_pts)
+            p_y_min = min(0.0, math.floor((p_min - 2.0) / 5.0) * 5.0)
+            p_y_max = max(20.0, math.ceil((p_max * 1.2 + 2.0) / 5.0) * 5.0)
+        else:
+            p_y_min, p_y_max = -5.0, 30.0
+
         self._draw_single_trace(
             chart_rect.x + 16, y3, chart_w, sub_h,
-            [self.trace_power, self.trace_deficit], ["Battery Power (kW)", "Deficit (kW)"], [UI_COOLING, UI_CRITICAL],
-            y_min=-30.0, y_max=90.0
+            [self.trace_power, self.trace_deficit], ["Battery Power", "Deficit"], [UI_COOLING, UI_CRITICAL],
+            y_min=p_y_min, y_max=p_y_max, unit="kW",
+            fill_primary=True,
         )
+
+        # ── 4. Multi-Scale Control Subplot (SOC, Safe Ceiling, PPO Action) ───
         self._draw_single_trace(
             chart_rect.x + 16, y4, chart_w, sub_h,
             [self.trace_soc, self.trace_ceiling, self.trace_action],
-            ["SOC (%)", "Safety Ceiling (A)", "PPO Action"],
+            ["SOC", "Safety Ceiling", "PPO Action"],
             [UI_NORMAL, UI_ACCENT, UI_PURPLE],
-            y_min=0.0, y_max=100.0,
+            y_min=0.0, y_max=100.0, unit="",
             scales=[(0.0, 100.0), (0.0, 160.0), (-1.0, 1.0)],
+            scale_units=["%", "A", ""],
         )
 
     def _draw_single_trace(
@@ -1945,40 +1975,61 @@ class InteractiveSimulator:
         colors: List[Tuple[int, int, int]],
         y_min: float,
         y_max: float,
+        unit: str = "",
         scales: Optional[List[Tuple[float, float]]] = None,
+        scale_units: Optional[List[str]] = None,
+        fill_primary: bool = False,
     ) -> None:
-        """Render single oscilloscope subplot with empty-state placeholders & clean grid (§4)."""
+        """Render high-clarity oscilloscope subplot with Y-axis tick marks, area fills, and live value readouts."""
         LEGEND_H = 22
+        plot_x = x + 44
+        plot_w = w - 44
         plot_y = y + LEGEND_H
         plot_h = h - LEGEND_H
 
         # Background surface & subtle border
-        pygame.draw.rect(self.screen, UI_PANEL_ALT, (x, plot_y, w, plot_h), border_radius=4)
-        pygame.draw.rect(self.screen, UI_BORDER_SUBTLE, (x, plot_y, w, plot_h), width=1, border_radius=4)
+        pygame.draw.rect(self.screen, UI_PANEL_ALT, (plot_x, plot_y, plot_w, plot_h), border_radius=4)
+        pygame.draw.rect(self.screen, UI_BORDER_SUBTLE, (plot_x, plot_y, plot_w, plot_h), width=1, border_radius=4)
 
-        # Subtle horizontal grid lines (4 divisions)
-        for gi in range(1, 4):
-            gy = plot_y + int(gi * plot_h / 4)
-            pygame.draw.line(self.screen, (22, 28, 36), (x + 1, gy), (x + w - 2, gy), 1)
+        # Subtle horizontal grid lines & Y-axis numerical labels (3 divisions)
+        for gi in range(0, 4):
+            frac = gi / 3.0
+            gy = plot_y + int(frac * (plot_h - 1))
+            val_at_grid = y_max - frac * (y_max - y_min)
+            # Grid line
+            pygame.draw.line(self.screen, (24, 30, 40), (plot_x + 1, gy), (plot_x + plot_w - 2, gy), 1)
+            # Y-axis label on left margin
+            if scales is None:
+                lbl_str = f"{val_at_grid:.1f}" if (y_max - y_min) <= 10.0 else f"{val_at_grid:.0f}"
+                lbl_surf = self.font_unit.render(lbl_str, True, UI_TEXT_MUTED)
+                self.screen.blit(lbl_surf, (x + 38 - lbl_surf.get_width(), gy - lbl_surf.get_height() // 2))
+
+        # Highlight zero baseline if inside visible range
+        if y_min < 0 < y_max:
+            zero_norm = (0.0 - y_min) / (y_max - y_min)
+            zero_y = plot_y + plot_h - int(zero_norm * plot_h)
+            pygame.draw.line(self.screen, (40, 52, 70), (plot_x + 1, zero_y), (plot_x + plot_w - 2, zero_y), 1)
 
         # Legend above plot area
-        lx = x + 6
+        lx = plot_x + 4
         for li, (label, color) in enumerate(zip(labels, colors)):
             pygame.draw.rect(self.screen, color, (lx, y + 6, 8, 8), border_radius=2)
             if scales is not None and li < len(scales):
                 s_min, s_max = scales[li]
-                label = f"{label} [{s_min:g}..{s_max:g}]"
-            surf = self.font_small.render(label, True, UI_TEXT_SECONDARY)
+                s_unit = scale_units[li] if scale_units else ""
+                label_txt = f"{label} [{s_min:g}..{s_max:g}{s_unit}]"
+            else:
+                label_txt = f"{label} ({unit})" if unit else label
+            surf = self.font_small.render(label_txt, True, UI_TEXT_SECONDARY)
             self.screen.blit(surf, (lx + 12, y + 4))
-            lx += surf.get_width() + 24
+            lx += surf.get_width() + 20
 
         # Check if traces have active recorded points
         has_data = any(len(t.y) >= 2 for t in traces)
         if not has_data:
-            # Active empty/rest state placeholder (§4)
             placeholder = "● Awaiting telemetry — Press PLAY or STEP to record live dynamics"
             p_surf = self.font_small.render(placeholder, True, UI_TEXT_MUTED)
-            px = x + (w - p_surf.get_width()) // 2
+            px = plot_x + (plot_w - p_surf.get_width()) // 2
             py = plot_y + (plot_h - p_surf.get_height()) // 2
             self.screen.blit(p_surf, (px, py))
             return
@@ -1991,16 +2042,46 @@ class InteractiveSimulator:
                 t_min, t_max = scales[ti]
             else:
                 t_min, t_max = y_min, y_max
+
             pts = []
             for i, val in enumerate(trace.y):
-                px = x + int(i * (w - 2) / max(1, trace.max_points - 1))
+                px = plot_x + int(i * (plot_w - 2) / max(1, trace.max_points - 1))
                 norm_y = np.clip((val - t_min) / max(1e-6, t_max - t_min), 0.0, 1.0)
                 py = plot_y + plot_h - 2 - int(norm_y * (plot_h - 4))
                 pts.append((px, py))
+
+            # Translucent Area Fill under primary curve
+            if fill_primary and ti == 0 and len(pts) >= 2:
+                fill_pts = [(pts[0][0], plot_y + plot_h - 2)] + pts + [(pts[-1][0], plot_y + plot_h - 2)]
+                fill_surface = pygame.Surface((plot_w, plot_h), pygame.SRCALPHA)
+                local_poly = [(pt[0] - plot_x, pt[1] - plot_y) for pt in fill_pts]
+                fill_color = (color[0], color[1], color[2], 28)
+                pygame.draw.polygon(fill_surface, fill_color, local_poly)
+                self.screen.blit(fill_surface, (plot_x, plot_y))
+
+            # Draw crisp anti-aliased trace line
             if len(pts) >= 2:
                 pygame.draw.lines(self.screen, color, False, pts, 2)
+
+            # Draw glowing end-point and live readout pill
             if pts:
-                pygame.draw.circle(self.screen, color, pts[-1], 3)
+                last_pt = pts[-1]
+                pygame.draw.circle(self.screen, color, last_pt, 4)
+                pygame.draw.circle(self.screen, (255, 255, 255), last_pt, 2)
+
+                # Floating Live Value Readout on the Right
+                last_val = trace.y[-1]
+                t_u = scale_units[ti] if (scales and scale_units) else unit
+                val_text = f"{last_val:+.2f} {t_u}" if abs(last_val) < 10.0 else f"{last_val:.1f} {t_u}"
+                v_surf = self.font_unit.render(val_text.strip(), True, color)
+                pill_w = v_surf.get_width() + 8
+                pill_h = 16
+                pill_x = min(plot_x + plot_w - pill_w - 4, last_pt[0] + 6)
+                pill_y = max(plot_y + 2, min(plot_y + plot_h - pill_h - 2, last_pt[1] - pill_h // 2))
+
+                pygame.draw.rect(self.screen, (16, 22, 30), (pill_x, pill_y, pill_w, pill_h), border_radius=3)
+                pygame.draw.rect(self.screen, color, (pill_x, pill_y, pill_w, pill_h), width=1, border_radius=3)
+                self.screen.blit(v_surf, (pill_x + 4, pill_y + 1))
 
     def _draw_message_bar(self) -> None:
         if self.message and time.perf_counter() < self.message_until:
