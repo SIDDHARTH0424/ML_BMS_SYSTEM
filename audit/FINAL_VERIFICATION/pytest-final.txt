@@ -266,4 +266,4 @@ tests/test_vehicle_dynamics.py::test_increasing_mass_increases_force PASSED [ 99
 tests/test_vehicle_dynamics.py::test_increasing_drag_coefficient_increases_aero_only PASSED [ 99%]
 tests/test_vehicle_dynamics.py::test_outputs_finite PASSED               [100%]
 
-============================ 261 passed in 39.19s =============================
+============================ 261 passed in 13.94s =============================
