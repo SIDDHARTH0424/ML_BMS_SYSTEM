@@ -25,6 +25,8 @@
                        |-- Baselines (MaxI, CCCV, Adapt)                   |-- PPO Agent (100k validated)
                                                                            |-- Baseline (RuleBasedEMS)
                                                                            |-- Cycles (UDDS, HWFET, US06, WLTP)
+                       |                                                   |-- 9-State Thermal State Machine
+                       |                                                   |-- Demo Safety Stop Controller
                        |                                                   |
                        +-------------------------+-------------------------+
                                                  |
@@ -34,8 +36,8 @@
                                     | (app/interactive_ev_sim) |
                                     +--------------------------+
                                     | • Real-time Pygame GUI   |
-                                    | • Discrete Timestep Step |
-                                    | • Real State Telemetry   |
+                                    | • 24px Unified Grid      |
+                                    | • Dual Research/Demo     |
                                     | • Live Stripcharts       |
                                     +--------------------------+
 
@@ -151,8 +153,10 @@ rl-bms-Driving/
 │
 ├── app/                                  # Presentation & Interactive Visualization Layer
 │   ├── __init__.py
-│   ├── interactive_ev_simulator.py       # Standalone 2D Pygame interactive simulator
-│   └── README.md                         # Instructions for demo launch & key controls
+│   ├── interactive_ev_simulator.py       # Standalone 2D Pygame interactive simulator (24px grid)
+│   ├── thermal_state_machine.py          # 9-state thermal logic & driver guidance
+│   ├── safety_stop_controller.py         # Controlled vehicle deceleration controller
+│   └── logger.py                         # High-resolution simulation session logger
 │
 ├── baselines/                            # Deterministic Benchmark Controllers
 │   ├── cc.py                             # Constant Current, CCCV, Max-Current, Adaptive BMS
@@ -164,30 +168,24 @@ rl-bms-Driving/
 │   ├── drivetrain.yaml                   # Gear ratio, motor efficiency, regen limits
 │   ├── safety.yaml                       # Voltage, temperature, and current thresholds
 │   ├── reward.yaml                       # Multi-objective reward coefficients
+│   ├── thermal_management.yaml           # Threshold ordering & passive cooling parameters
 │   ├── final_charging/                   # Frozen configs for Track A
 │   └── final_driving/                    # Frozen configs for Track B
 │
 ├── data/                                 # Standard Drive Cycles
 │   └── drive_cycles/standard/
-│       ├── epa_udds/cycle.csv            # EPA Urban Dynamometer Driving Schedule (1371 s)
-│       ├── epa_hwfet/cycle.csv           # EPA Highway Fuel Economy Test (764 s)
-│       ├── epa_us06/cycle.csv            # EPA Supplemental Aggressive Cycle (595 s)
-│       └── wltp_class3b/cycle.csv        # Worldwide Harmonized Light Vehicles Test (1799 s)
-│
-├── docs/                                 # Engineering Specifications & Research Findings
-│   ├── demo_runbook.md                   # Step-by-step 15-min R1/R2/R3 evaluation guide
-│   ├── research_findings.md              # Long-horizon 1M PPO instability documentation
-│   ├── model_specification.md            # Physics formulas and ECM equations
-│   └── vehicle_dynamics.md               # Power-flow and longitudinal vehicle equations
+│       ├── epa_udds/cycle.csv            # EPA Urban Dynamometer Driving Schedule (1372 s)
+│       ├── epa_hwfet/cycle.csv           # EPA Highway Fuel Economy Test (765 s)
+│       ├── epa_us06/cycle.csv            # EPA Supplemental Aggressive Cycle (596 s)
+│       └── wltp_class3b/cycle.csv        # Worldwide Harmonized Light Vehicles Test (1800 s)
 │
 ├── environment/                          # Real Simulation Environments & Physics Modules
 │   ├── battery_env.py                    # Track A: BatteryChargingEnv (Gymnasium)
 │   ├── ev_energy_env.py                  # Track B: EVEnergyEnv (Gymnasium)
-│   ├── ecm_model.py                      # 1RC Thevenin Equivalent Circuit & Thermal Lump
+│   ├── ecm.py                            # 1RC Thevenin Equivalent Circuit & Thermal Lump
 │   ├── vehicle_dynamics.py               # Aerodynamic, rolling, grade, and inertial forces
-│   ├── drivetrain_model.py               # Mechanical-to-electrical bidirectional conversion
-│   ├── drive_cycle.py                    # Drive-cycle loader and interpolator
-│   └── env_factory.py                    # Standardized environment builder
+│   ├── drivetrain.py                     # Mechanical-to-electrical bidirectional conversion
+│   └── drive_cycle.py                    # Drive-cycle loader and interpolator
 │
 ├── final_models/                         # Frozen Validated PPO Checkpoints
 │   ├── README.md                         # Model inventory and exact evaluation metrics
@@ -198,17 +196,16 @@ rl-bms-Driving/
 │   ├── driving_B3_100k_seed21/           # Validated Track B Model (Mean: 129.3 Wh/km, 97.4% regen)
 │   └── driving_B3_100k_seed42/           # Validated Track B Model (Mean: 128.9 Wh/km, 97.7% regen)
 │
-├── RESULTS/                              # Consolidated Benchmark CSVs & Summaries
-│   ├── README.md                         # Summary index table across all cycles and seeds
-│   ├── driving/                          # Benchmark CSVs for UDDS, HWFET, US06, WLTP
-│   ├── charging/                         # Candidate evaluation metrics & tradeoffs
-│   └── reports/                          # Final evaluation report and issue log
-│
 ├── safety/                               # Hard Safety Protection Layers
 │   └── safety_layer.py                   # Unidirectional & Bidirectional safety clamping
 │
-├── tests/                                # Comprehensive Test Suite (225 tests, 100% pass)
-│   ├── test_interactive_simulator.py     # 11 tests verifying simulator functionality
+├── scripts/                              # Verification & Utility Runners
+│   └── verify_project.py                 # Master 10-Phase Project Verification Runner
+│
+├── tests/                                # Comprehensive Test Suite (261 tests, 100% pass)
+│   ├── test_interactive_simulator.py     # 22 tests verifying simulator functionality
+│   ├── test_demo_safety_stop_integration.py # 7 tests verifying demo stop & freeze separation
+│   ├── test_driving_thermal_acceptance.py # 18 tests verifying thermal state transitions
 │   ├── test_ecm.py                       # Physics & thermal validation
 │   ├── test_safety.py                    # Clamping and derating verification
 │   ├── test_safety_bidirectional.py      # Driving discharge/charge bounds
@@ -218,7 +215,7 @@ rl-bms-Driving/
 └── training/                             # Training & Evaluation Scripts
     ├── evaluate.py                       # Track A model evaluation runner
     ├── evaluate_drive_ems.py             # Track B multi-cycle evaluation runner
-    ├── train_ppo.py                      # SB3 PPO training for charging
+    ├── train.py                          # SB3 PPO training for charging
     └── train_drive_ems.py                # SB3 PPO training for driving
 
 
@@ -240,6 +237,6 @@ rl-bms-Driving/
    • Thermal derating and SoC/voltage limits guarantee operation within physical cell envelope.
 
 3. Testing & Verification:
-   • 225 / 225 Automated pytest tests passing.
-   • compileall passes with zero syntax or import errors.
+   • 261 / 261 Automated pytest tests passing (100% pass rate).
+   • Master 10-Phase Project Verification script passes 10/10 with zero defects.
 ====================================================================================================
